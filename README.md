@@ -3,6 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch 2.x](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)](https://pytorch.org/)
 [![timm](https://img.shields.io/badge/timm-1.0%2B-green.svg)](https://github.com/huggingface/pytorch-image-models)
+[![Dataset: Google Drive](https://img.shields.io/badge/Dataset-Google_Drive-4285F4?logo=googledrive&logoColor=white)](https://drive.google.com/drive/u/0/folders/1u4_lTDN0FpJojGtgs-dv1OuD2siQkpiQ)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Target Hardware](https://img.shields.io/badge/Target_Hardware-NVIDIA_RTX_A6000_(48GB)-76b900.svg)](https://www.nvidia.com/)
 
@@ -162,6 +163,12 @@ $$
 
 ## Downstream Tasks & Supported Datasets
 
+> [!TIP]
+> **Dataset Download (Google Drive):**
+> All synchronized and preprocessed multimodal dataset benchmarks (`MFNet`, `RGBT-CC`, and `DarkAct`) can be downloaded directly from the official Google Drive repository:
+>
+> 📁 [**CTCM-Net Datasets Directory (Google Drive)**](https://drive.google.com/drive/u/0/folders/1u4_lTDN0FpJojGtgs-dv1OuD2siQkpiQ)
+
 | Task | Target Dataset | Input Resolution | Output Format | Evaluation Metrics |
 | :--- | :--- | :--- | :--- | :--- |
 | **Semantic Segmentation** | **MFNet** (RGB-T Urban) | $256 \times 256$ paired RGB-T | $[B, 9, 256, 256]$ logits | Mean IoU (mIoU), Pixel Accuracy |
@@ -169,6 +176,8 @@ $$
 | **Action Recognition** | **DarkAct** (Night Action) | $256 \times 256$ paired RGB-T | $[B, 27]$ logits | Top-1 Accuracy, Top-5 Accuracy |
 
 ### Suggested Dataset Layout
+
+Once downloaded, extract the archive contents into `./Datasets/` matching the following directory structure:
 
 ```text
 Datasets/
