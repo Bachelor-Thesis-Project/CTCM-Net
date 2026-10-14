@@ -332,6 +332,6 @@ separate from the repository's software licence.
 
 ------------------------------------------------------------------------
 
-**Maintainer:** `<YOUR NAME OR TEAM>`\
+**Maintainer:** `<Mounika, Rounak, Arun, Mashub>`\
 **Project:** CTCM-Net --- Cross-Task Consistency for Multimodal Visual
 Understanding
