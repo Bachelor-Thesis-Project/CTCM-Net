@@ -39,50 +39,13 @@ RGB sensors deliver rich chromatic textures under optimal lighting but degrade s
 2. **Crowd Density Estimation (`RGBT-CC`, continuous 2D map)**: Answers *"How many people are present, and where are they clustered?"*
 3. **Human Action Recognition (`DarkAct`, 27 classes)**: Answers *"What activities are humans performing in degraded night conditions?"*
 
-### Key Architectural Contributions
+#### Key Architectural Contributions
 
-```
-                  +-------------------------------------------------------------+
-                  |                     PAIRED INPUT DATA                       |
-                  |     RGB Spectrum (3x256x256) + Thermal Spectrum (3x256x256) |
-                  +------------------------------+------------------------------+
-                                                 |
-                                                 v
-                  +-------------------------------------------------------------+
-                  |         DUAL-STREAM CONVNEXT V2 ENCODER (FCMAE-22k)         |
-                  |    Synchronized Pyramids: Stage 1 (1/4), 2 (1/8), 3 (1/16), 4 (1/32)
-                  +------------------------------+------------------------------+
-                                                 |
-                                                 v
-                  +-------------------------------------------------------------+
-                  |           ILLUMINATION-AWARE MODALITY DECOMPOSITION         |
-                  |  Modality-Invariant (L_sim)  <--->  Modality-Specific (L_diff)|
-                  |            Spatial Gating conditioned on Illumination (L)    |
-                  +------------------------------+------------------------------+
-                                                 |
-                         +-----------------------+-----------------------+
-                         |                       |                       |
-                         v                       v                       v
-             +-----------------------+ +--------------------+ +--------------------+
-             | SEMANTIC SEGMENTATION | |   CROWD DENSITY    | | ACTION RECOGNITION |
-             |  Top-Down FPN Decoder | | ASPP Context Fusion| | Adaptive Pool MLP |
-             |     [B, 9, 256, 256]  | |   [B, 1, 256, 256] | |     [B, 27]        |
-             +-----------+-----------+ +---------+----------+ +--------------------+
-                         |                       |
-                         +-----------+-----------+
-                                     |
-                                     v
-             +---------------------------------------------------------------+
-             |                CROSS-TASK CONSISTENCY ENGINE                  |
-             |  L_mask-density = L_out (Out-of-Bounds) + beta * L_align      |
-             +-------------------------------+-------------------------------+
-                                             |
-                                             v
-             +---------------------------------------------------------------+
-             |        HOMOSCEDASTIC UNCERTAINTY BALANCER (Kendall et al.)    |
-             |     L_total = Sum_i [ 1/(2*sigma_i^2) * L_i + log(1+sigma_i^2)]|
-             +---------------------------------------------------------------+
-```
+<p align="center">
+  <img src="assets/CTCM-Architecture.png" alt="CTCM-Net Architecture Diagram" width="100%">
+  <br>
+  <em>Figure 1: Complete Architectural Framework of CTCM-Net showcasing Dual-Stream ConvNeXt V2 (Tiny) FCMAE-22k Feature Extraction, Illumination-Aware Modality Decomposition with Spatial Gating, Dense Multi-Task Prediction Decoders (Semantic Segmentation, Crowd Density, Action Recognition), and the Cross-Task Consistency Engine.</em>
+</p>
 
 1. **Illumination-Aware Modality Decomposition**: Rather than naive channel concatenation, CTCM-Net disentangles multi-modal representations into **Modality-Invariant features** (shared geometry, boundaries) and **Modality-Specific features** (sensor-exclusive textures and thermal radiation), dynamically arbitrated by ambient illumination.
 2. **Cross-Task Consistency Engine ($\mathcal{L}_{\text{mask-density}}$)**: Bridges semantic segmentation and continuous crowd counting. Pedestrian segmentation masks mathematically bound where density can exist (suppressing background false positives) while encouraging non-zero density where pedestrians are detected.
@@ -182,6 +145,8 @@ Datasets/
 ```text
 CTCM-Net/
 ├── Datasets/                 # Local symlinks/storage for MFNet, RGBT-CC, DarkAct
+├── assets/                   # Architecture schematics & publication diagrams
+│   └── CTCM-Architecture.png # High-resolution complete system architecture diagram
 ├── results/                  # Generated publication-ready 300 DPI figures
 │   ├── homoscedastic_sigma_curves.png
 │   ├── multitask_loss_convergence.png
@@ -283,9 +248,10 @@ All visual assets are stored in [`./results/`](file:///home/rounak/CTCM-Net/resu
 
 | File Name | Dimensions | Purpose & Insights |
 | :--- | :--- | :--- |
-| [`homoscedastic_sigma_curves.png`](file:///home/rounak/CTCM-Net/results/homoscedastic_sigma_curves.png) | $4690 \times 1769$ px | Dynamic evolution of $\sigma_1..\sigma_4$ and corresponding effective weights $w_i = \frac{1}{2\sigma_i^2}$. Demonstrates Kendall et al. balancing. |
-| [`multitask_loss_convergence.png`](file:///home/rounak/CTCM-Net/results/multitask_loss_convergence.png) | $4690 \times 2975$ px | 2×2 convergence grid showing multi-task exponential decay for Segmentation, Crowd Density, Action Recognition, and Consistency Loss. |
-| [`decomposition_metrics.png`](file:///home/rounak/CTCM-Net/results/decomposition_metrics.png) | $4690 \times 1787$ px | Dual-axis bar chart showing $\mathcal{L}_{\text{sim}}$ vs $\mathcal{L}_{\text{diff}}$ and subspace orthogonality breakdown across pyramid strides. |
+| [`CTCM-Architecture.png`](assets/CTCM-Architecture.png) | $1586 \times 793$ px | Complete end-to-end multi-modal architecture diagram showcasing dual-stream backbone, decomposition, heads, and consistency engine. |
+| [`homoscedastic_sigma_curves.png`](results/homoscedastic_sigma_curves.png) | $4690 \times 1769$ px | Dynamic evolution of $\sigma_1..\sigma_4$ and corresponding effective weights $w_i = \frac{1}{2\sigma_i^2}$. Demonstrates Kendall et al. balancing. |
+| [`multitask_loss_convergence.png`](results/multitask_loss_convergence.png) | $4690 \times 2975$ px | 2×2 convergence grid showing multi-task exponential decay for Segmentation, Crowd Density, Action Recognition, and Consistency Loss. |
+| [`decomposition_metrics.png`](results/decomposition_metrics.png) | $4690 \times 1787$ px | Dual-axis bar chart showing $\mathcal{L}_{\text{sim}}$ vs $\mathcal{L}_{\text{diff}}$ and subspace orthogonality breakdown across pyramid strides. |
 
 ---
 
