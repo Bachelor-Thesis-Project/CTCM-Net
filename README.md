@@ -76,39 +76,87 @@ The codebase is organized into clean, focused submodules under [`models/`](file:
 
 ### 1. Illumination-Aware Modality Decomposition
 
-At each pyramid stage $s \in \{1, 2, 3, 4\}$:
-- **Modality-Invariant Projection**: $F_{\text{inv}}^{\text{RGB}} = \Phi_{\text{inv}}^{\text{RGB}}(F_s^{\text{RGB}})$, $F_{\text{inv}}^{\text{th}} = \Phi_{\text{inv}}^{\text{th}}(F_s^{\text{th}})$
-- **Modality-Specific Projection**: $F_{\text{spec}}^{\text{RGB}} = \Phi_{\text{spec}}^{\text{RGB}}(F_s^{\text{RGB}})$, $F_{\text{spec}}^{\text{th}} = \Phi_{\text{spec}}^{\text{th}}(F_s^{\text{th}})$
+At each hierarchical feature pyramid stage $s \in \{1, 2, 3, 4\}$:
 
-Disentanglement is enforced via:
-$$\mathcal{L}_{\text{sim}} = \frac{1}{4} \sum_{s=1}^{4} \text{MSE}\left(F_{\text{inv}, s}^{\text{RGB}}, F_{\text{inv}, s}^{\text{th}}\right)$$
+- **Modality-Invariant Projection**:
 
-$$\mathcal{L}_{\text{diff}} = \frac{1}{4} \sum_{s=1}^{4} \left[ \text{Ortho}(F_{\text{inv}, s}, F_{\text{spec}, s}^{\text{RGB}}) + \text{Ortho}(F_{\text{inv}, s}, F_{\text{spec}, s}^{\text{th}}) + \text{Ortho}(F_{\text{spec}, s}^{\text{RGB}}, F_{\text{spec}, s}^{\text{th}}) \right]$$
+$$
+F_{\text{inv}, s}^{\text{RGB}} = \Phi_{\text{inv}}^{\text{RGB}}(F_s^{\text{RGB}}), \quad F_{\text{inv}, s}^{\text{th}} = \Phi_{\text{inv}}^{\text{th}}(F_s^{\text{th}})
+$$
 
-Where the orthogonality constraint is the normalized cosine squared metric:
-$$\text{Ortho}(x, y) = \left( \frac{\langle x, y \rangle}{\|x\|_2 \|y\|_2 + \epsilon} \right)^2$$
+- **Modality-Specific Projection**:
+
+$$
+F_{\text{spec}, s}^{\text{RGB}} = \Phi_{\text{spec}}^{\text{RGB}}(F_s^{\text{RGB}}), \quad F_{\text{spec}, s}^{\text{th}} = \Phi_{\text{spec}}^{\text{th}}(F_s^{\text{th}})
+$$
+
+Subspace disentanglement is enforced via Similarity Loss ($\mathcal{L}_{\text{sim}}$):
+
+$$
+\mathcal{L}_{\text{sim}} = \frac{1}{4} \sum_{s=1}^{4} \text{MSE}\left(F_{\text{inv}, s}^{\text{RGB}}, F_{\text{inv}, s}^{\text{th}}\right)
+$$
+
+and Orthogonality Difference Loss ($\mathcal{L}_{\text{diff}}$):
+
+$$
+\mathcal{L}_{\text{diff}} = \frac{1}{4} \sum_{s=1}^{4} \left[ \text{Ortho}(F_{\text{inv}, s}, F_{\text{spec}, s}^{\text{RGB}}) + \text{Ortho}(F_{\text{inv}, s}, F_{\text{spec}, s}^{\text{th}}) + \text{Ortho}(F_{\text{spec}, s}^{\text{RGB}}, F_{\text{spec}, s}^{\text{th}}) \right]
+$$
+
+where the pairwise orthogonality constraint is computed using the normalized cosine squared metric:
+
+$$
+\text{Ortho}(x, y) = \left( \frac{\langle x, y \rangle}{\|x\|_2 \|y\|_2 + \epsilon} \right)^2
+$$
 
 ### 2. Cross-Task Consistency Engine
 
-The continuous density response $D(u, v)$ is regularized against the pedestrian probability map $P_{\text{person}}(u, v) = \text{Softmax}(\text{Logits}_{\text{seg}})_{c=2}$:
+The continuous crowd density map $D(u, v)$ is regularized against the pedestrian probability map $P_{\text{person}}(u, v)$ extracted from the segmentation logits:
 
-1. **Out-of-Bounds Suppression Penalty ($\mathcal{L}_{\text{out}}$)**:
-   Penalizes predicted density mass located outside detected pedestrian masks:
-   $$\mathcal{L}_{\text{out}} = \frac{\sum_{u, v} D(u, v) \cdot \left(1 - P_{\text{person}}(u, v)\right)}{\sum_{u, v} D(u, v) + \epsilon}$$
+$$
+P_{\text{person}}(u, v) = \text{Softmax}\left(\mathbf{Z}_{\text{seg}}(u, v)\right)_{c=2}
+$$
 
-2. **Spatial Existence Alignment Penalty ($\mathcal{L}_{\text{align}}$)**:
-   Enforces spatial overlap using a soft continuous Dice formulation:
-   $$\mathcal{L}_{\text{align}} = 1 - \frac{2 \sum_{u, v} P_{\text{person}}(u, v) \cdot D_{\text{norm}}(u, v)}{\sum_{u, v} P_{\text{person}}(u, v)^2 + \sum_{u, v} D_{\text{norm}}(u, v)^2 + \epsilon}$$
-   where $D_{\text{norm}}(u, v) = \frac{D(u, v)}{\max(D) + \epsilon}$.
+#### A. Out-of-Bounds Suppression Penalty ($\mathcal{L}_{\text{out}}$)
 
-3. **Composite Consistency Regularization**:
-   $$\mathcal{L}_{\text{mask-density}} = \mathcal{L}_{\text{out}} + \beta \mathcal{L}_{\text{align}} \quad (\text{default } \beta = 1.0)$$
+Penalizes predicted density mass located outside detected pedestrian masks:
+
+$$
+\mathcal{L}_{\text{out}} = \frac{\sum_{u, v} D(u, v) \cdot \left(1 - P_{\text{person}}(u, v)\right)}{\sum_{u, v} D(u, v) + \epsilon}
+$$
+
+#### B. Spatial Existence Alignment Penalty ($\mathcal{L}_{\text{align}}$)
+
+Enforces spatial overlap using a soft continuous Dice formulation:
+
+$$
+\mathcal{L}_{\text{align}} = 1 - \frac{2 \sum_{u, v} P_{\text{person}}(u, v) \cdot D_{\text{norm}}(u, v)}{\sum_{u, v} P_{\text{person}}(u, v)^2 + \sum_{u, v} D_{\text{norm}}(u, v)^2 + \epsilon}
+$$
+
+where normalized density is defined as:
+
+$$
+D_{\text{norm}}(u, v) = \frac{D(u, v)}{\max(D) + \epsilon}
+$$
+
+#### C. Composite Consistency Regularization
+
+$$
+\mathcal{L}_{\text{mask-density}} = \mathcal{L}_{\text{out}} + \beta \mathcal{L}_{\text{align}} \quad (\text{with } \beta = 1.0)
+$$
 
 ### 3. Multi-Task Homoscedastic Gradient Balancing
 
-Following Kendall et al. (CVPR 2018), four learnable parameters $\sigma_i$ are optimized simultaneously with network weights:
-$$\mathcal{L}_{\text{total}} = \sum_{i=1}^{4} \left( \frac{1}{2\sigma_i^2}\mathcal{L}_i + \log(1 + \sigma_i^2) \right)$$
-where $w_i = \frac{1}{2\sigma_i^2}$ represents the effective adaptive task weight.
+Following Kendall et al. (CVPR 2018), four learnable uncertainty parameters $\sigma_i$ are optimized simultaneously with network weights:
+
+$$
+\mathcal{L}_{\text{total}} = \sum_{i=1}^{4} \left( \frac{1}{2\sigma_i^2}\mathcal{L}_i + \log(1 + \sigma_i^2) \right)
+$$
+
+where the dynamic inverse-variance loss weights are given by:
+
+$$
+w_i = \frac{1}{2\sigma_i^2}
+$$
 
 ---
 
