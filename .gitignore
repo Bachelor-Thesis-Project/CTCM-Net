@@ -1,0 +1,19 @@
+# Datasets
+Datasets/
+
+# Model checkpoints
+*.pth
+*.pt
+*.ckpt
+*.onnx
+
+# Training outputs
+runs/
+wandb/
+logs/
+checkpoints/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.venv/
