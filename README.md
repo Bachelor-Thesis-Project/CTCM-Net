@@ -106,7 +106,6 @@ At a conceptual level, the framework can be organised as follows:
 5.  **Cross-Task Consistency Module (CTCM):** Apply consistency
     objectives between relevant task predictions or representations,
     where implemented.
-6.  **Training and evaluation:** 
 
 
 ## Datasets
