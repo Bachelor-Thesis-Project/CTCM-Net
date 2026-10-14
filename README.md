@@ -13,12 +13,6 @@ cross-task consistency, with the goal of using complementary visual cues
 to improve understanding in challenging conditions such as low
 illumination and visually complex scenes.
 
-> **Project status:** Research / academic project. Update this README to
-> reflect the modules, experiments, and results that are implemented in
-> the current repository.
-
-------------------------------------------------------------------------
-
 ## Table of Contents
 
 -   [Motivation](#motivation)
